@@ -2,14 +2,15 @@
   "doors": [
     {
       "id": "1",
-      "name": "ananayaaa",
+      "name": "Front Door",
       "status": "open",
-      "description": "rakesh"
+      "description": "Main entrance door"
     },
     {
       "id": "2",
       "name": "Back Door",
-      "status": "closed"
+      "status": "closed",
+      "description": "Back entrance door"
     }
   ]
 }

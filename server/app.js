@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const express = require('express');
 const cors = require('cors');
 
-const PORT = process.env.SECONDARY_PUBLIC_PORT || 8000;
+const PORT = 8000; // Fixed port number
 
 const app = express();
 
@@ -43,7 +43,8 @@ const loadData = (key) => {
         const data = JSON.parse(dataJSON);
         return key ? data[key] : data;
     } catch (e) {
-        return {};
+        console.error('Error loading data:', e);
+        return key === 'doors' ? [] : {};
     }
 };
 
@@ -56,7 +57,8 @@ const saveData = (key, data) => {
         fs.writeFileSync(dbPath, dataJSON);
         return data;
     } catch (e) {
-        return {};
+        console.error('Error saving data:', e);
+        return key === 'doors' ? [] : {};
     }
 };
 
@@ -67,7 +69,7 @@ app.get('/doors', (_, res) => {
 
 app.get('/doors/:id', (req, res) => {
     const doorsData = loadData('doors');
-    const door = doorsData.find((door) => door.id === req.params.id);
+    const door = doorsData.find((door) => door.id === req.params.id.toString());
     if (door) {
         return res.json(door);
     }
@@ -77,15 +79,19 @@ app.get('/doors/:id', (req, res) => {
 
 app.post('/doors', (req, res) => {
     const doorsData = loadData('doors');
-    const newDoor = { id: (doorsData.length + 1).toString(), ...req.body };
+    const newDoor = { 
+        id: (doorsData.length + 1).toString(), 
+        ...req.body,
+        status: req.body.status || 'closed' // Default status
+    };
     doorsData.push(newDoor);
     saveData('doors', doorsData);
-    res.status(200).json(newDoor);
+    res.status(201).json(newDoor);
 });
 
 app.put('/doors/:id', (req, res) => {
     const doorsData = loadData('doors');
-    const doorIndex = doorsData.findIndex((door) => door.id === req.params.id);
+    const doorIndex = doorsData.findIndex((door) => door.id === req.params.id.toString());
 
     // dont allow to update 'id' field
     delete req.body.id;
@@ -101,7 +107,7 @@ app.put('/doors/:id', (req, res) => {
 
 app.delete('/doors/:id', (req, res) => {
     const doorsData = loadData('doors');
-    const doorIndex = doorsData.findIndex((door) => door.id === req.params.id);
+    const doorIndex = doorsData.findIndex((door) => door.id === req.params.id.toString());
     if (doorIndex !== -1) {
         const deletedDoor = doorsData[doorIndex];
         doorsData.splice(doorIndex, 1);
@@ -112,6 +118,12 @@ app.delete('/doors/:id', (req, res) => {
     res.status(404).json({ message: 'Door not found' });
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
+});
+
 app.listen(PORT, () => {
-    console.log(`🚀 server is running on ${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
